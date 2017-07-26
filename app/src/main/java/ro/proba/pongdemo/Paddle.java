@@ -33,8 +33,6 @@ public class Paddle {
 
     /**
      * pass the screen width anf height
-     * @param x
-     * @param y
      */
     public Paddle(int x, int y){
         mScreenX = x;
@@ -60,5 +58,27 @@ public class Paddle {
     //change or set the mPadding direction or state
     public void setMovementState(int state){
         mPaddleMoving = state;
+    }
+
+    public void update(long fps){
+        if(mPaddleMoving == LEFT){
+            mXCoord = mXCoord - mPaddleSpeed / fps;
+        }
+        if(mPaddleMoving == RIGHT){
+            mXCoord = mXCoord + mPaddleSpeed / fps;
+        }
+        if(mRect.left < 0){
+            mXCoord = 0;
+        }
+        //make sure is not leaving screen
+        if(mRect.right > mScreenX){
+            mXCoord = mScreenX -
+                    //the width of the paddle
+                    (mRect.right - mRect.left);
+        }
+
+        //update de paddle graphics
+        mRect.left = mXCoord;
+        mRect.right = mXCoord + mLenght;
     }
 }
