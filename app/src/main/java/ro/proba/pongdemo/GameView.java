@@ -19,10 +19,9 @@ import android.view.SurfaceView;
 
 import java.io.IOException;
 
-import static android.content.ContentValues.TAG;
-
 class GameView extends SurfaceView implements Runnable{
 
+    final private String TAG = "cip";
     Thread mGameThread = null;
 
     //we need a SurfaceHolder when we use Paint and Canvas in a thread
@@ -69,6 +68,10 @@ class GameView extends SurfaceView implements Runnable{
                     .setUsage(AudioAttributes.USAGE_MEDIA)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build();
+            sp = new SoundPool.Builder()
+                    .setMaxStreams(5)
+                    .setAudioAttributes(audioAttributes)
+                    .build();
         } else {
             sp = new SoundPool(5, AudioManager.STREAM_MUSIC, 0);
         }
@@ -86,7 +89,7 @@ class GameView extends SurfaceView implements Runnable{
             descriptor = assetManager.openFd("beep3.ogg");
             beep3ID = sp.load(descriptor, 0);
 
-            descriptor = assetManager.openFd("beep1.ogg");
+            descriptor = assetManager.openFd("loseLife.ogg");
             looseLifeID = sp.load(descriptor, 0);
 
             descriptor = assetManager.openFd("explode.ogg");
@@ -225,6 +228,19 @@ class GameView extends SurfaceView implements Runnable{
     public boolean onTouchEvent(MotionEvent event) {
 
         switch (event.getAction() & event.ACTION_MASK){
+            case MotionEvent.ACTION_DOWN:
+                //is the touch on left or right
+                if(event.getX() > mScreenX / 2){
+                    mPaddle.setMovementState(mPaddle.RIGHT);
+                } else {
+                    mPaddle.setMovementState(mPaddle.LEFT);
+                }
+                mPaused = false;
+                break;
+            //player has removed finger from screen
+            case MotionEvent.ACTION_UP:
+                mPaddle.setMovementState(mPaddle.STOPPED);
+                break;
 
         }
         return true;
