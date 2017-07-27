@@ -9,6 +9,7 @@ public class MainActivity extends Activity {
 
     //it is the view and the logic of the game
     GameView gameView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

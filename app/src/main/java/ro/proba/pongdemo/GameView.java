@@ -22,6 +22,7 @@ import java.io.IOException;
 class GameView extends SurfaceView implements Runnable{
 
     final private String TAG = "cip";
+    private final Context mContext;
     Thread mGameThread = null;
 
     //we need a SurfaceHolder when we use Paint and Canvas in a thread
@@ -56,18 +57,26 @@ class GameView extends SurfaceView implements Runnable{
         mScreenX = x;
         mScreenY = y;
 
+        mContext = context;
+
         mOurHolder = getHolder();
         mPaint = new Paint();
 
         mPaddle = new Paddle(mScreenX, mScreenY);
         mBall = new Ball(mScreenX, mScreenY);
 
+        loadTheSounds();
+
+        setupAndRestart();
+    }
+
+    private void loadTheSounds() {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
             AudioAttributes audioAttributes =
                     new AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build();
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build();
             sp = new SoundPool.Builder()
                     .setMaxStreams(5)
                     .setAudioAttributes(audioAttributes)
@@ -77,7 +86,7 @@ class GameView extends SurfaceView implements Runnable{
         }
 
         try {
-            AssetManager assetManager = context.getAssets();
+            AssetManager assetManager = mContext.getAssets();
             AssetFileDescriptor descriptor;
 
             descriptor = assetManager.openFd("beep1.ogg");
@@ -98,7 +107,7 @@ class GameView extends SurfaceView implements Runnable{
         } catch (IOException e){
             Log.e(TAG, "failed to load sound files");
         }
-        setupAndRestart();
+
     }
 
     private void setupAndRestart() {
@@ -115,12 +124,10 @@ class GameView extends SurfaceView implements Runnable{
         while(mPlaying){
             long startFrameTime = System.currentTimeMillis();
 
-            //update the frame
             if(!mPaused){
                 update();
             }
 
-            //draw the frame
             draw();
 
             long timeThisFrame = System.currentTimeMillis()-startFrameTime;
@@ -136,7 +143,52 @@ class GameView extends SurfaceView implements Runnable{
         mPaddle.update(mFPS);
         mBall.update(mFPS);
 
-        //the ball hits the paddle
+        ifTheBallHistsThePaddle();
+        ifTheBallHitsTheBottomOfTheScreen();
+        ifTheBallHitsTheTopOfTheScreen();
+        ifTheBallHitsTheLeftOfTheScreen();
+        ifTheBallHitsTheRightOfTheScreen();
+    }
+
+    private void ifTheBallHitsTheBottomOfTheScreen() {
+        if(mBall.getRect().bottom > mScreenY){
+            mBall.reverseYVelocity();
+            mBall.clearObstacleY(mScreenY - 2);
+
+            mLives--;
+            beepPlay(looseLifeID);
+            if(mLives == 0){
+                mPaused = true;
+                setupAndRestart();
+            }
+        }
+    }
+
+    private void ifTheBallHitsTheTopOfTheScreen() {
+        if(mBall.getRect().top < 0){
+            mBall.reverseYVelocity();
+            mBall.clearObstacleY(12);
+            beepPlay(beep2ID);
+        }
+    }
+
+    private void ifTheBallHitsTheLeftOfTheScreen() {
+        if(mBall.getRect().left < 0){
+            mBall.reverseXVelocity();
+            mBall.clearObstacleX(2);
+            beepPlay(beep3ID);
+        }
+    }
+
+    private void ifTheBallHitsTheRightOfTheScreen() {
+        if(mBall.getRect().right > mScreenX){
+            mBall.reverseXVelocity();
+            mBall.clearObstacleX(mScreenX - 22);
+            beepPlay(beep3ID);
+        }
+    }
+
+    private void ifTheBallHistsThePaddle() {
         if(RectF.intersects(mPaddle.getRect(), mBall.getRect())){
             mBall.setRandomXVelocity();
             mBall.reverseYVelocity();
@@ -145,40 +197,6 @@ class GameView extends SurfaceView implements Runnable{
             mScore++;
             mBall.increaseVelocity();
             beepPlay(beep1ID);
-        }
-
-        //ball hits the bottom of the screen
-        if(mBall.getRect().bottom > mScreenY){
-            mBall.reverseYVelocity();
-            mBall.clearObstacleY(mScreenY - 2);
-
-            mLives--;
-            sp.play(looseLifeID, 1,1,0,0,1);
-            if(mLives == 0){
-                mPaused = true;
-                setupAndRestart();
-            }
-        }
-
-        //ball hits the top of the screen
-        if(mBall.getRect().top < 0){
-            mBall.reverseYVelocity();
-            mBall.clearObstacleY(12);
-            beepPlay(beep2ID);
-        }
-
-        //ball hits the left of the screen
-        if(mBall.getRect().left < 0){
-            mBall.reverseXVelocity();
-            mBall.clearObstacleX(2);
-            beepPlay(beep3ID);
-        }
-
-        //ball hits the right of the screen
-        if(mBall.getRect().right > mScreenX){
-            mBall.reverseXVelocity();
-            mBall.clearObstacleX(mScreenX - 22);
-            beepPlay(beep3ID);
         }
     }
 
